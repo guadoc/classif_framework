@@ -1,0 +1,14 @@
+
+
+- regqrder si le nouvequ plot n'est pas plus rapide
+- model input, labels into model files
+
+- distribute the learning
+- regarder si on ne doit pas passer session en parametres
+
+- pb pour vider une queue et la relancer en validation
+- commence à prendre du temps, faire un time profiling pour implementation sous-optimale
+
+- faire dependre la loss du model,
+- decider du format des label en classification (sclaire ou vecteur de booleen) --> scalaire semble mieux pour les cas ou on ne reçoit que les indice de la classe (imagenet)
+- retirer le tableau dans Data pour sample
