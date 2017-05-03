@@ -5,7 +5,7 @@ def init_config():
     parser = argparse.ArgumentParser(description='Framework for machine learning with Tensor Flow', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     #model config
     parser.add_argument('-mp',       '--model_path'       , default='cifar.models_cifar',                         help='model folder, must contain __init__ file')
-    parser.add_argument('-m',        '--model'            , default='inception',                                     help='model file')
+    parser.add_argument('-m',        '--model'            , default='inception_reg',                                     help='model file')
     #data config
     parser.add_argument('-dp',       '--dataset'          , default='cifar.dataset_cifar',                        help='folder with metadata configuration')
     parser.add_argument('-d',        '--data'             , default='./cifar/dataset_cifar/bin',                  help='folder with data')
@@ -13,8 +13,8 @@ def init_config():
     parser.add_argument('-ca',       '--cache'            , default='/net/phoenix/blot/cifar/expe',               help='folder with experiments log and variables')
     parser.add_argument('-log',      '--log'              , default='./cifar/expe',                               help='folder with experiments log and variables')
     parser.add_argument('-sm',       '--save_model'       , default=True,                                         help='Decide if model weights are saved after each epoch')
-    parser.add_argument('-le',       '--last_epoch'       , default=0,                                            help='last epoch, must load epoch model')
-    parser.add_argument('-ind',      '--index'            , default=None,                                         help='folder with experiments log and variables, None for last')
+    parser.add_argument('-le',       '--last_epoch'       , default=29,                                            help='last epoch, must load epoch model')
+    parser.add_argument('-ind',      '--index'            , default=332,                                         help='folder with experiments log and variables, None for last')
 
     #training config
     parser.add_argument('-ne',       '--n_epoch'          , default=500,                                          help='total number of epoch')

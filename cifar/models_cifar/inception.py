@@ -1,10 +1,11 @@
 import tensorflow as tf
 from tensorflow.python.training import moving_averages
 from tensorflow.python.ops import control_flow_ops
+import math
 
 REG_COEF = 0.9
-FC_WEIGHT_STDDEV=0.01
-CONV_WEIGHT_STDDEV=0.01
+FC_WEIGHT_STDDEV=0.05
+CONV_WEIGHT_STDDEV=0.05
 CONV_WEIGHT_DECAY = 0#0.0005
 FC_WEIGHT_DECAY= 0#0.0005
 
@@ -19,12 +20,8 @@ def activation(x):
 def optim_param_schedule(monitor):
     epoch = monitor.epoch
     momentum = 0.9
-    if epoch < 50:
-        lr = 0.01
-    elif epoch < 200:
-        lr = 0.001
-    else:
-        lr = 0.00001
+    lr = 0.1*math.pow(0.95, monitor.epoch-1)
+    print("lr: "+str(lr))
     return {"lr":lr, "momentum":momentum}
 
 def regularizer():
@@ -89,7 +86,7 @@ def conv(x, ksize, stride, filters_out, is_training):
     reg = tf.multiply(tf.nn.l2_loss(weights), CONV_WEIGHT_DECAY)
     tf.add_to_collection(collection+'_reg', reg)
     out = tf.nn.conv2d(x, weights, [1, stride, stride, 1], padding='SAME')
-    out = bn(out, False, is_training, ksize)
+    out = bn(out, True, is_training, ksize)
     return activation(out)
 
 
@@ -142,6 +139,7 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_2'):
         x = inception(x, 176, 160, training_mode)
+        #x = tf.Print(x, [tf.shape(x)])
         x = tf.nn.avg_pool(x, ksize=[1, 7, 7, 1], strides=[1, 1, 1, 1], padding='VALID')
         x = tf.reshape(x, [-1, 336])
 

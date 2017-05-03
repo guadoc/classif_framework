@@ -30,7 +30,7 @@ class Model:
             self.model_load(os.path.join(opts.cache, opts.model + "_" + str(opts.last_epoch) + ".ckpt"))
         else:
             self.sess.run(tf.global_variables_initializer())
-        print('### Model %s initialized with %dK parameters'%(opts.model, self.count_params()/1000))
+        print('### Model %s initialized with %d parameters'%(opts.model, self.count_params()))
 
 
     def set_train_mode(self, training_mode = True):

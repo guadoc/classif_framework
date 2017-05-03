@@ -4,12 +4,12 @@ from tensorflow.python.ops import control_flow_ops
 import math
 import numpy as np
 REG_COEF = 0.8
-CONV_WEIGHT_DECAY = 0.00005
-FC_WEIGHT_DECAY= 0.0001
+CONV_WEIGHT_DECAY = 0.0000005
+FC_WEIGHT_DECAY= 0.000001
 
 REG_COEF = 0.9
-FC_WEIGHT_STDDEV=0.01
-CONV_WEIGHT_STDDEV=0.01
+FC_WEIGHT_STDDEV=0.05
+CONV_WEIGHT_STDDEV=0.05
 
 UPDATE_OPS_COLLECTION = 'resnet_update_ops'
 MOVING_AVERAGE_DECAY = 0.9997
@@ -24,10 +24,10 @@ def optim_param_schedule(monitor):
     momentum = 0.9
     if epoch < 50:
         lr = 0.01
-    elif epoch < 300:
+    elif epoch < 150:
         lr = 0.001
     else:
-        lr = 0.00001
+        lr = 0.0001
     return {"lr":lr, "momentum":momentum}
 
 def regularizer():
@@ -89,7 +89,7 @@ def conv_me(x, ksize, stride, filters_out):
     reg = tf.add(var_1, var_2)
     #reg = tf.Print(reg, [tf.get_variable_scope().name, reg, tf.shape(moving_mean_2), tf.shape(moving_mean_1)])
     tf.add_to_collection(collection+'_reg', tf.multiply(reg, CONV_WEIGHT_DECAY, name='reg'))
-    #outputs = bn(outputs, False, is_training, ksize)
+    outputs = bn(outputs, True, is_training, ksize)
     return activation(outputs)
 
 
@@ -132,7 +132,7 @@ def conv(x, ksize, stride, filters_out, is_training):
     reg = tf.multiply(tf.nn.l2_loss(weights), CONV_WEIGHT_DECAY)
     tf.add_to_collection(collection+'_reg', reg)
     out = tf.nn.conv2d(x, weights, [1, stride, stride, 1], padding='SAME')
-    out = bn(out, False, is_training, ksize)
+    out = bn(out, True, is_training, ksize)
     return activation(out)
 
 

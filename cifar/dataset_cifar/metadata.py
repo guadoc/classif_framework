@@ -63,13 +63,10 @@ class Metadata:
         image = tf.cast(tf.transpose(depth_major, [1, 2, 0]), tf.float32)
 
         if self.data_type == 'train':
-            image = tf.image.resize_image_with_crop_or_pad(image, image_size+4, image_size+4)
-            image = tf.random_crop(image, self.input_shape)
-            image = tf.image.random_flip_left_right(image)
-            # Brightness/saturation/constrast provides small gains .2%~.5% on cifar.
-            # image = tf.image.random_brightness(image, max_delta=63. / 255.)
-            # image = tf.image.random_saturation(image, lower=0.5, upper=1.5)
-            # image = tf.image.random_contrast(image, lower=0.2, upper=1.8)
+            image = tf.image.resize_image_with_crop_or_pad(image, self.input_shape[0], self.input_shape[1])
+            #image = tf.random_crop(image, self.input_shape)
+            #image = tf.image.random_flip_left_right(image)
+            image = tf.divide(image, 255)
             image = tf.image.per_image_standardization(image)
             example_queue = tf.RandomShuffleQueue(
                 capacity= 1000,
@@ -85,7 +82,9 @@ class Metadata:
             images, labels = example_queue.dequeue_many(batch_size)
             labels = tf.reshape(labels, [batch_size])
         elif self.data_type == 'val':
+            #image = tf.image.per_image_standardization(image)
             image = tf.image.resize_image_with_crop_or_pad(image, self.input_shape[0], self.input_shape[1])
+            image = tf.divide(image, 255)
             image = tf.image.per_image_standardization(image)
             example_queue = tf.FIFOQueue(
                 1000,
