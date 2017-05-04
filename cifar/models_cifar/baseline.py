@@ -2,6 +2,7 @@ import tensorflow as tf
 REG_COEF = 0.9
 FC_WEIGHT_STDDEV=0.01
 CONV_WEIGHT_STDDEV=0.01
+
 CONV_WEIGHT_DECAY = 0#0.0005
 FC_WEIGHT_DECAY= 0#0.0005
 
@@ -15,7 +16,7 @@ def optim_param_schedule(monitor):
     momentum = 0.9
     if epoch < 201:
         lr = 0.01
-    elif epoch < 300:
+    elif epoch < 400:
         lr = 0.001
     else:
         lr = 0.00001
@@ -48,11 +49,7 @@ def conv(x, ksize, stride, filters_out):
     collection = tf.get_variable_scope().name
     shape = [ksize, ksize, filters_in, filters_out]
     initializer = tf.truncated_normal_initializer(stddev=CONV_WEIGHT_STDDEV)
-    #weights = _get_variable('weights', collection = tf.get_variable_scope().name, shape=shape, initializer=initializer, weight_decay=CONV_WEIGHT_DECAY)
-    weights = tf.get_variable('weights',
-                         shape=shape,
-                         initializer=initializer,
-                         dtype='float')
+    weights = tf.get_variable('weights', shape=shape, initializer=initializer, dtype='float')
     tf.add_to_collection(collection+"_variables", weights)
     reg = tf.multiply(tf.nn.l2_loss(weights), CONV_WEIGHT_DECAY)
     tf.add_to_collection(collection+'_reg', reg)
@@ -68,9 +65,11 @@ def max_pool_2x2(x):
 
 def inference(inputs, training_mode):
     x = inputs
+    activs = [[], [], [], []]
     with tf.variable_scope('layer_5'):
         n_out = 32
         x = conv(x, 5, 1, n_out)
+        activs[0] = x[:,3,3,2]
         #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2, 2, 0], collections=['per_batch'])
         x = activation(x)
         x = max_pool_2x2(x)
@@ -78,6 +77,7 @@ def inference(inputs, training_mode):
     with tf.variable_scope('layer_4'):
         n_out = 64
         x = conv(x, 5, 1, n_out)
+        activs[1] = x[:,3,3,2]
         #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2, 2, 0], collections=['per_batch'])
         x = activation(x)
         x = max_pool_2x2(x)
@@ -85,6 +85,7 @@ def inference(inputs, training_mode):
     with tf.variable_scope('layer_3'):
         n_out = 64
         x = conv(x, 5, 1, n_out)
+        activs[2] = x[:,3,3,2]
         #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2, 2, 0], collections=['per_batch'])
         x = activation(x)
         x = max_pool_2x2(x)
@@ -93,10 +94,11 @@ def inference(inputs, training_mode):
     with tf.variable_scope('layer_2'):
         n_out = 1000
         x = fc(x, n_out)
+        activs[3] = x[:,3]
         #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2], collections=['per_batch'])
         x = activation(x)
     with tf.variable_scope('layer_1'):
         outputs = fc(x, 10)
         #tr_activation_summary = tf.summary.histogram('activation1', outputs[:, 2], collections=['per_batch'])
 
-    return outputs
+    return outputs, activs

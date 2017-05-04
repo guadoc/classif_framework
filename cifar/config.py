@@ -12,9 +12,9 @@ def init_config():
     #saves and logs folders
     parser.add_argument('-ca',       '--cache'            , default='/net/phoenix/blot/cifar/expe',               help='folder with experiments log and variables')
     parser.add_argument('-log',      '--log'              , default='./cifar/expe',                               help='folder with experiments log and variables')
-    parser.add_argument('-sm',       '--save_model'       , default=True,                                         help='Decide if model weights are saved after each epoch')
-    parser.add_argument('-le',       '--last_epoch'       , default=29,                                            help='last epoch, must load epoch model')
-    parser.add_argument('-ind',      '--index'            , default=332,                                         help='folder with experiments log and variables, None for last')
+    parser.add_argument('-sm',       '--save_model'       , default=False,                                         help='Decide if model weights are saved after each epoch')
+    parser.add_argument('-le',       '--last_epoch'       , default=0,                                            help='last epoch, must load epoch model')
+    parser.add_argument('-ind',      '--index'            , default=None,                                         help='folder with experiments log and variables, None for last')
 
     #training config
     parser.add_argument('-ne',       '--n_epoch'          , default=500,                                          help='total number of epoch')

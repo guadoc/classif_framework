@@ -16,7 +16,7 @@ class Model:
         self.inputs = tf.placeholder(tf.float32, shape=data.input_bat_shape)
         self.labels = tf.placeholder(tf.int64, shape=data.label_bat_shape)
         # with tf.device("/gpu:0"):
-        self.outputs = model.inference(self.inputs, self.training_mode)
+        self.outputs, self.infos = model.inference(self.inputs, self.training_mode)
         #self.regularizer = tf.reduce_sum(model.regularizer())
         self.layer_regularizer = model.layer_regularizer()
         self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.outputs, labels=self.labels))

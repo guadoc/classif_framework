@@ -63,10 +63,10 @@ class Metadata:
         image = tf.cast(tf.transpose(depth_major, [1, 2, 0]), tf.float32)
 
         if self.data_type == 'train':
-            image = tf.image.resize_image_with_crop_or_pad(image, self.input_shape[0], self.input_shape[1])
-            #image = tf.random_crop(image, self.input_shape)
-            #image = tf.image.random_flip_left_right(image)
-            image = tf.divide(image, 255)
+            #image = tf.image.resize_image_with_crop_or_pad(image, self.input_shape[0], self.input_shape[1])
+            image = tf.random_crop(image, self.input_shape)
+            image = tf.image.random_flip_left_right(image)
+            #image = tf.divide(image, 255)
             image = tf.image.per_image_standardization(image)
             example_queue = tf.RandomShuffleQueue(
                 capacity= 1000,
@@ -84,7 +84,7 @@ class Metadata:
         elif self.data_type == 'val':
             #image = tf.image.per_image_standardization(image)
             image = tf.image.resize_image_with_crop_or_pad(image, self.input_shape[0], self.input_shape[1])
-            image = tf.divide(image, 255)
+            #image = tf.divide(image, 255)
             image = tf.image.per_image_standardization(image)
             example_queue = tf.FIFOQueue(
                 1000,

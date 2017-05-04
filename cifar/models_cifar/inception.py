@@ -105,6 +105,7 @@ def downsample(x, filter_conv, is_training):
 
 
 def inference(inputs, training_mode):
+    activs = [[], [], [], []]
     x = inputs
     with tf.variable_scope('layer_12'):
         n_out = 96
@@ -115,6 +116,7 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_10'):
         x = inception(x, 32, 48, training_mode)
+        activs[0] = x[:,3,3,2]
 
     with tf.variable_scope('layer_9'):
         x = downsample(x, 80, training_mode)
@@ -124,6 +126,7 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_7'):
         x = inception(x, 96, 64, training_mode)
+        activs[1] = x[:,3,3,2]
 
     with tf.variable_scope('layer_6'):
         x = inception(x, 80, 80, training_mode)
@@ -133,6 +136,7 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_4'):
         x = downsample(x, 96, training_mode)
+        activs[2] = x[:,3,3,2]
 
     with tf.variable_scope('layer_3'):
         x = inception(x, 176, 160, training_mode)
@@ -142,8 +146,9 @@ def inference(inputs, training_mode):
         #x = tf.Print(x, [tf.shape(x)])
         x = tf.nn.avg_pool(x, ksize=[1, 7, 7, 1], strides=[1, 1, 1, 1], padding='VALID')
         x = tf.reshape(x, [-1, 336])
+        activs[3] = x[:,3]
 
     with tf.variable_scope('layer_1'):
         outputs = fc(x, 10)
 
-    return outputs
+    return outputs, activs
