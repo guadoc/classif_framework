@@ -1,6 +1,5 @@
 import tensorflow as tf
 import tqdm as tq
-#from data_loaders import DataLoaders
 
 class Valid:
     def __init__(self, opts, model, dataset):

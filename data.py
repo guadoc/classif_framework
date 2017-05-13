@@ -10,6 +10,7 @@ class Data:
 
 
     def sample(self, quantity):
+        #return self.batch_sample(quantity)
         return self.sess.run(self.batch_sample, feed_dict={self.batch_size:quantity})
 
     def get_exemple(self):

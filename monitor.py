@@ -21,7 +21,8 @@ class Monitor:
         self.n_train_bat_epoch = math.floor(opts.n_data_train / self.tr_batch_size)
         self.batch = self.n_train_bat_epoch * self.last_epoch
         #self.train_infos = np.array(np.array([], dtype=np.int64), np.array([], dtype=np.int64), np.array([], dtype=np.int64), np.array([], dtype=np.int64))
-        self.train_infos = [np.array([], dtype=np.int64) for x in range(4)]
+        self.train_infos = np.array([], dtype=np.int64)
+        self.val_infos = np.array([], dtype=np.int64)
 
         # validation parameters
         self.val_batch_size = self.tr_batch_size
@@ -38,6 +39,7 @@ class Monitor:
                         'accuracy_top5':tf.reduce_sum(tf.to_float(  tf.nn.in_top_k(   model.outputs, model.labels, k=5 )  ))
                         }
         self.val_metrics = {
+                        'infos':model.infos,
                         'loss':model.loss,
                         'accuracy_top1':tf.reduce_sum(tf.cast(tf.equal(tf.cast(tf.argmax(model.outputs,1), tf.int32), tf.cast(model.labels, tf.int32)), tf.float32)),
                         'accuracy_top5':tf.reduce_sum(tf.to_float(  tf.nn.in_top_k(   model.outputs, model.labels, k=5 )  ))
@@ -72,14 +74,21 @@ class Monitor:
         self.log_writer = tf.summary.FileWriter(opts.log)
         self.epoch_time = time.time()
 
-    def use_infos(self, infos):
-        for i in range(len(infos)):
-            self.train_infos[i] =  np.concatenate((self.train_infos[i], infos[i]))
+    def use_train_infos(self, infos):
+        if self.train_infos.shape[0] == 0:
+            self.train_infos = infos
+        else:
+            self.train_infos = np.concatenate((self.train_infos, infos), axis=0)
 
 
+    def use_val_infos(self, infos):
+        if self.val_infos.shape[0] == 0:
+            self.val_infos = infos
+        else:
+            self.val_infos = np.concatenate((self.val_infos, infos), axis=0)
 
     def bat_train_update(self, metrics, summary):
-        self.use_infos(metrics['infos'])
+        self.use_train_infos(metrics['infos'])
         self.batch += 1
         self.epoch_train_stat['loss'] += metrics['loss']
         self.epoch_train_stat['accuracy_top1'] += metrics['accuracy_top1']
@@ -87,12 +96,14 @@ class Monitor:
         self.log_writer.add_summary(summary, self.batch)
 
     def bat_val_update(self, metrics):
+        self.use_val_infos(metrics['infos'])
         self.epoch_val_stat['loss'] += metrics['loss']
         self.epoch_val_stat['accuracy_top1'] += metrics['accuracy_top1']
         self.epoch_val_stat['accuracy_top5'] += metrics['accuracy_top5']
 
     def init_epoch(self):
-        self.train_infos = [np.array([], dtype=np.int64) for x in range(4)]
+        self.train_infos = np.array([], dtype=np.int64)#[np.array([], dtype=np.int64) for x in range(4)]
+        self.val_infos = np.array([], dtype=np.int64)
 
         self.epoch = self.epoch + 1
         self.epoch_val_stat['loss'] = 0
@@ -122,7 +133,7 @@ class Monitor:
         #printing report
         m, s = divmod(time.time() - self.epoch_time, 60)
         h, m = divmod(m, 60)
-        print('Epoch %d[%d:%d:%d], Test[loss: %.3f, accuracy(top1): %.2f%%, accuracy(top5): %.2f%%], Train[loss: %.3f, accuracy(top1): %.2f%%, accuracy(top5): %.2f%%]'%\
+        print('Epoch %d[%d:%d:%d], Test[loss: %.3f, accuracy(top1): %.2f%%, accuracy(top5): %.2f%%], Train[loss: %.4f, accuracy(top1): %.2f%%, accuracy(top5): %.2f%%]'%\
                 (self.epoch,
                 h, m, s,
                 val_loss,
@@ -132,13 +143,19 @@ class Monitor:
                 train_accuracy_top1,
                 train_accuracy_top5))
 
+        tr_histos = np.apply_along_axis(lambda a: np.histogram(a, bins=1000, density=1, range=(-3, 3))[0], 0, self.train_infos)
+        tr_entropys = np.apply_along_axis(lambda a: st.entropy(a / np.sum(a)), 0, tr_histos)
+        val_histos = np.apply_along_axis(lambda a: np.histogram(a, bins=1000, density=1, range=(-3, 3))[0], 0, self.val_infos)
+        val_entropys = np.apply_along_axis(lambda a: st.entropy(a / np.sum(a)), 0, val_histos)
 
-        hi1 = numpy.histogram( self.train_infos[0], bins=1000, density=1, range=(-3, 3))[0]
-        hi2 = numpy.histogram( self.train_infos[1], bins=1000, density=1, range=(-3, 3))[0]
-        hi3 = numpy.histogram( self.train_infos[2], bins=1000, density=1, range=(-3, 3))[0]
-        hi4 = numpy.histogram( self.train_infos[3], bins=1000, density=1, range=(-3, 3))[0]
-        h1 = st.entropy(hi1 / np.sum(hi1) )
-        h2 = st.entropy(hi2 / np.sum(hi2) )
-        h3 = st.entropy(hi3 / np.sum(hi3) )
-        h4 = st.entropy(hi4 / np.sum(hi4) )
-        print('h1: %.4f, h2: %.4f, h3: %.4f, h4: %.4f'% (h1, h2, h3, h4))
+        print("Entropy: Test[%.5f],  Train[%.5f]"%(np.mean(val_entropys), np.mean(tr_entropys)))
+
+        # hi1 = numpy.histogram( self.train_infos[0], bins=1000, density=1, range=(-3, 3))[0]
+        # hi2 = numpy.histogram( self.train_infos[1], bins=1000, density=1, range=(-3, 3))[0]
+        # hi3 = numpy.histogram( self.train_infos[2], bins=1000, density=1, range=(-3, 3))[0]
+        # hi4 = numpy.histogram( self.train_infos[3], bins=1000, density=1, range=(-3, 3))[0]
+        # h1 = st.entropy(hi1 / np.sum(hi1) )
+        # h2 = st.entropy(hi2 / np.sum(hi2) )
+        # h3 = st.entropy(hi3 / np.sum(hi3) )
+        # h4 = st.entropy(hi4 / np.sum(hi4) )
+        # print('h1: %.4f, h2: %.4f, h3: %.4f, h4: %.4f'% (h1, h2, h3, h4))

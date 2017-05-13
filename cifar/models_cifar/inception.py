@@ -6,8 +6,8 @@ import math
 REG_COEF = 0.9
 FC_WEIGHT_STDDEV=0.05
 CONV_WEIGHT_STDDEV=0.05
-CONV_WEIGHT_DECAY = 0#0.0005
-FC_WEIGHT_DECAY= 0#0.0005
+CONV_WEIGHT_DECAY = 0#0.00001
+FC_WEIGHT_DECAY= 0#0.00001
 
 UPDATE_OPS_COLLECTION = 'resnet_update_ops'
 MOVING_AVERAGE_DECAY = 0.9997
@@ -21,14 +21,12 @@ def optim_param_schedule(monitor):
     epoch = monitor.epoch
     momentum = 0.9
     lr = 0.1*math.pow(0.95, monitor.epoch-1)
-    print("lr: "+str(lr))
+    print("lr: "+str(lr)+", momentum: "+str(momentum))
     return {"lr":lr, "momentum":momentum}
 
-def regularizer():
-    return tf.get_collection('reg')
 
 def layer_regularizer():
-    n_layers = 2
+    n_layers = 12
     regs = []
     for i in range(n_layers):
         regs.append([tf.get_collection('layer_'+str(i+1)+'_reg'), tf.get_collection('layer_'+str(i+1)+'_variables')])
@@ -36,10 +34,10 @@ def layer_regularizer():
 
 def fc(x, num_units_out):
     num_units_in = x.get_shape()[1]
-    collection = tf.get_variable_scope().name
     weights_initializer = tf.truncated_normal_initializer(stddev=FC_WEIGHT_STDDEV)
     weights = tf.get_variable('weights', shape=[num_units_in, num_units_out], initializer=weights_initializer, dtype='float')
     biases = tf.get_variable('biases', shape=[num_units_out], initializer=tf.zeros_initializer(), dtype='float')
+    collection = tf.get_variable_scope().name
     tf.add_to_collection(collection+"_variables", weights)
     tf.add_to_collection(collection+"_variables", biases)
     reg = tf.multiply(tf.nn.l2_loss(weights), CONV_WEIGHT_DECAY)
@@ -72,7 +70,6 @@ def bn(x, use_bias, is_training, ksize):
     mean, variance = control_flow_ops.cond(
         is_training, lambda: (update_moving_mean, update_moving_variance),
         lambda: (moving_mean, moving_variance))
-
     return tf.nn.batch_normalization(x, mean, variance, beta, gamma, BN_EPSILON)
 
 def conv(x, ksize, stride, filters_out, is_training):
@@ -105,7 +102,6 @@ def downsample(x, filter_conv, is_training):
 
 
 def inference(inputs, training_mode):
-    activs = [[], [], [], []]
     x = inputs
     with tf.variable_scope('layer_12'):
         n_out = 96
@@ -116,7 +112,6 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_10'):
         x = inception(x, 32, 48, training_mode)
-        activs[0] = x[:,3,3,2]
 
     with tf.variable_scope('layer_9'):
         x = downsample(x, 80, training_mode)
@@ -126,7 +121,6 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_7'):
         x = inception(x, 96, 64, training_mode)
-        activs[1] = x[:,3,3,2]
 
     with tf.variable_scope('layer_6'):
         x = inception(x, 80, 80, training_mode)
@@ -136,7 +130,6 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_4'):
         x = downsample(x, 96, training_mode)
-        activs[2] = x[:,3,3,2]
 
     with tf.variable_scope('layer_3'):
         x = inception(x, 176, 160, training_mode)
@@ -146,9 +139,8 @@ def inference(inputs, training_mode):
         #x = tf.Print(x, [tf.shape(x)])
         x = tf.nn.avg_pool(x, ksize=[1, 7, 7, 1], strides=[1, 1, 1, 1], padding='VALID')
         x = tf.reshape(x, [-1, 336])
-        activs[3] = x[:,3]
 
     with tf.variable_scope('layer_1'):
         outputs = fc(x, 10)
 
-    return outputs, activs
+    return outputs, outputs

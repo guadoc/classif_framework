@@ -90,7 +90,7 @@ class Metadata:
                 1000,
                 dtypes=[tf.float32, tf.int32],
                 shapes=[self.input_shape, [1]])
-            num_threads = 16
+            num_threads = 32
             example_enqueue_op = example_queue.enqueue([image, label])
             tf.train.add_queue_runner(tf.train.queue_runner.QueueRunner(
                 example_queue, [example_enqueue_op] * num_threads))

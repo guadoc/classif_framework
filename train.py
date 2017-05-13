@@ -57,6 +57,7 @@ class Train:
     def regularizers_(self, model):
         regs = []
         regul_list = model.layer_regularizer
+
         for i in range(len(regul_list)):
             reg = regul_list[i][0][0]
             var = regul_list[i][1]

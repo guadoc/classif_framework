@@ -33,7 +33,7 @@ def optim_param_schedule(monitor):
         lr = 0.01
     elif epoch < 24:
         lr = 0.001
-    elif epoch < 36:
+    elif epoch < 28:
         lr = 0.0001
     elif epoch < 50:
         lr = 0.00001

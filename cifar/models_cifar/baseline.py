@@ -14,12 +14,12 @@ def activation(x):
 def optim_param_schedule(monitor):
     epoch = monitor.epoch
     momentum = 0.9
-    if epoch < 201:
+    if epoch < 120:
         lr = 0.01
-    elif epoch < 400:
+    elif epoch < 180:
         lr = 0.001
     else:
-        lr = 0.00001
+        lr = 0.00001    
     return {"lr":lr, "momentum":momentum}
 
 def regularizer():
@@ -65,28 +65,24 @@ def max_pool_2x2(x):
 
 def inference(inputs, training_mode):
     x = inputs
-    activs = [[], [], [], []]
     with tf.variable_scope('layer_5'):
         n_out = 32
         x = conv(x, 5, 1, n_out)
-        activs[0] = x[:,3,3,2]
-        #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2, 2, 0], collections=['per_batch'])
+        tr_activation_summary = tf.summary.histogram('activation5', x[:, 2, 2, 0], collections=['per_batch'])
         x = activation(x)
         x = max_pool_2x2(x)
 
     with tf.variable_scope('layer_4'):
         n_out = 64
         x = conv(x, 5, 1, n_out)
-        activs[1] = x[:,3,3,2]
-        #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2, 2, 0], collections=['per_batch'])
+        tr_activation_summary = tf.summary.histogram('activation4', x[:, 2, 2, 0], collections=['per_batch'])
         x = activation(x)
         x = max_pool_2x2(x)
 
     with tf.variable_scope('layer_3'):
         n_out = 64
         x = conv(x, 5, 1, n_out)
-        activs[2] = x[:,3,3,2]
-        #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2, 2, 0], collections=['per_batch'])
+        tr_activation_summary = tf.summary.histogram('activation3', x[:, 2, 2, 0], collections=['per_batch'])
         x = activation(x)
         x = max_pool_2x2(x)
         x = tf.reshape(x, [-1, 4*4*n_out])
@@ -94,11 +90,11 @@ def inference(inputs, training_mode):
     with tf.variable_scope('layer_2'):
         n_out = 1000
         x = fc(x, n_out)
-        activs[3] = x[:,3]
-        #tr_activation_summary = tf.summary.histogram('activation1', x[:, 2], collections=['per_batch'])
+        infos = x
+        tr_activation_summary = tf.summary.histogram('activation2', x[:, 2], collections=['per_batch'])
         x = activation(x)
     with tf.variable_scope('layer_1'):
         outputs = fc(x, 10)
-        #tr_activation_summary = tf.summary.histogram('activation1', outputs[:, 2], collections=['per_batch'])
+        tr_activation_summary = tf.summary.histogram('activation1', outputs[:, 2], collections=['per_batch'])
 
-    return outputs, activs
+    return outputs, infos
