@@ -5,37 +5,47 @@ import matplotlib.pyplot as plt
 import os
 import time
 
-class Monitor:
-    def __init__(self, opts, model):
-        #general
-        self.sess = model.sess
-s
-        # testing parameters
-        self.test_batch_size = 10#opts.batch_size
-        self.n_test_batch = math.floor(opts.n_data_val / self.test_batch_size)
-        self.n_test_data_augment = 10
 
-        outs = []
+
+
+class Monitor:
+
+    def __init__(self, opts, model, test_set):
+        #general
+
+        self.test_set = test_set
+
+        #training parameters
+        #self.val_infos   = [np.array([], dtype=np.int64),   np.array([], dtype=np.int64)]
+
+        # validation parameters
+        self.test_batch_size = opts.batch_size
+        #self.n_test_batch = math.floor(test_set.n_data / self.test_batch_size)
+        self.n_test_batch = math.floor(opts.n_data_test / self.test_batch_size)
+
+        self.training_mode = tf.placeholder(tf.bool, shape=[])
+        self.batch_size = tf.placeholder(tf.int32, shape=[])
+
+        self.test_sample = self.test_set.sample(self.batch_size)
+
+        self.inputs = self.test_sample["inputs"]
+        self.labels = self.test_sample["labels"]
+        self.outputs, infos = model.inference(self.inputs, self.training_mode)
+        #self.loss = tf.reduce_mean(tf.nn.sparse_softmax_cross_entropy_with_logits(logits=self.outputs, labels=self.labels))
+
+        self.n_test_crop = 10
+        outs = []#self.outputs
         for i in range(self.test_batch_size):
-            outs.append(tf.reduce_mean(model.outputs[i*self.n_test_data_augment:(i+1)*self.n_test_data_augment], 0))
+            outs.append(tf.reduce_mean(self.outputs[i*self.n_test_crop:(i+1)*self.n_test_crop], 0))
 
         self.test_metrics = {
-                        'accuracy_top1':tf.reduce_sum(tf.to_float(tf.equal(tf.cast(tf.argmax(outs, 1), tf.int32), tf.cast(model.labels, tf.int32)))),
-                        'accuracy_top5':tf.reduce_sum(tf.to_float(  tf.nn.in_top_k(outs, model.labels, k=5 )  ) )
+                        'accuracy_top1':tf.reduce_sum(tf.to_float(tf.equal(tf.cast(tf.argmax(outs, 1), tf.int32), tf.cast(self.labels, tf.int32)))),
+                        'accuracy_top5':tf.reduce_sum(tf.to_float(  tf.nn.in_top_k(outs, self.labels, k=5 )  ) )
                         }
         self.epoch_test_stat = {
-                        'activation':[]
                         'accuracy_top1':0,
                         'accuracy_top5':0
                         }
-
-        tr_loss_summary = tf.summary.scalar('train loss', model.loss, collections=['per_batch'])
-        self.tr_epoch_loss = tf.placeholder(tf.float32, shape=[])
-        tr_epoch_loss_summary = tf.summary.scalar('epoch training loss', self.tr_epoch_loss, collections=['per_epoch'])
-
-        self.tr_batch_summary = tf.summary.merge_all(key='per_batch')
-        self.tr_epoch_summary = tf.summary.merge_all(key='per_epoch')
-        self.log_writer = tf.summary.FileWriter(opts.log)
 
 
 

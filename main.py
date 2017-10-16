@@ -1,7 +1,6 @@
 
 #import os
-# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
-
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
 
 import tensorflow as tf
 import importlib
@@ -24,14 +23,16 @@ train_model = Model(opts, train_meta_data)
 train_set = Data(train_meta_data, train_model.sess)
 val_set = Data(val_meta_data, train_model.sess)
 
+#trainer modules
+monitor = Monitor(opts, train_model, train_set, val_set)
+trainer = Train(opts, train_model, monitor)
+
 coord = tf.train.Coordinator()
 threads = tf.train.start_queue_runners(sess=train_model.sess, coord=coord)
 
-trainer = Train(opts, train_model, train_set, val_set)
-monitor = Monitor(opts, train_model)
-
 #initilization of all variables
 train_model.initialize_variables(opts)
+
 
 #training
 trainer.train(monitor, train_model)

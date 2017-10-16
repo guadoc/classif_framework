@@ -4,7 +4,7 @@ import math
 import numpy as np
 REG_COEF = 0.8
 FC_WEIGHT_STDDEV=0.01
-FC_WEIGHT_DECAY = 0.00001
+FC_WEIGHT_DECAY = 0.0005
 
 
 
@@ -12,14 +12,15 @@ def activation(x):
     return tf.nn.relu(x)
 
 def optim_param_schedule(monitor):
+    print("FC_WEIGHT_DECAY: "+str(FC_WEIGHT_DECAY))
     epoch = monitor.epoch
     momentum = 0.9
-    if epoch < 30:
+    if epoch < 50:
+        lr = 0.05
+    elif epoch < 100:
         lr = 0.01
-    elif epoch < 50:
+    elif epoch < 200:
         lr = 0.001
-    elif epoch < 80:
-        lr = 0.0001
     else:
         lr = 0.00005
     return {"lr":lr, "momentum":momentum}
@@ -63,17 +64,12 @@ def inference(inputs, training_mode):
     with tf.variable_scope('layer_3'):
         n_out = 1024
         x = fc(x, n_out)
-        infos = x
-        #tr_activation_summary = tf.summary.histogram('activation2', x[:, 2], collections=['per_batch'])
         x = activation(x)
     with tf.variable_scope('layer_2'):
         n_out = 1024
         x = fc(x, n_out)
-        infos = x
-        #tr_activation_summary = tf.summary.histogram('activation2', x[:, 2], collections=['per_batch'])
         x = activation(x)
     with tf.variable_scope('layer_1'):
         outputs = fc(x, 10)
-        #tr_activation_summary = tf.summary.histogram('activation1', outputs[:, 2], collections=['per_batch'])
 
-    return outputs, infos
+    return outputs, outputs

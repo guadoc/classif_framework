@@ -1,7 +1,5 @@
 import tensorflow as tf
-REG_COEF = 0.9
 FC_WEIGHT_STDDEV=0.01
-CONV_WEIGHT_STDDEV=0.01
 
 CONV_WEIGHT_DECAY = 0#0.0005
 FC_WEIGHT_DECAY= 0#0.0005
@@ -14,11 +12,11 @@ def activation(x):
 def optim_param_schedule(monitor):
     epoch = monitor.epoch
     momentum = 0.9
-    if epoch < 30:
-        lr = 0.01
-    elif epoch < 50:
+    if epoch < 200:
+        lr = 0.05
+    elif epoch < 300:
         lr = 0.001
-    elif epoch < 80:
+    elif epoch < 400:
         lr = 0.0001
     else:
         lr = 0.00005

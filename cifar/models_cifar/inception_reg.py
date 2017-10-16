@@ -3,14 +3,14 @@ from tensorflow.python.training import moving_averages
 from tensorflow.python.ops import control_flow_ops
 import math
 import numpy as np
-REG_COEF = 0.99
+REG_COEF = 0.9
 #da
 #CONV = 0.00005
 #FC = 0.00001
 #sans da
-#CONV = 0.000005
+#CONV = 0.000001
 #FC = 0.000001
-CONV_WEIGHT_DECAY = 0.00005
+CONV_WEIGHT_DECAY = 0.00001
 FC_WEIGHT_DECAY= 0.00001
 
 FC_WEIGHT_STDDEV=0.05
@@ -27,7 +27,7 @@ def activation(x):
 def optim_param_schedule(monitor):
     epoch = monitor.epoch
     momentum = 0.9
-    lr = 0.1*math.pow(0.95, monitor.epoch-1)
+    lr = 0.1*math.pow(0.97, monitor.epoch-1)
     print("lr: "+str(lr))
     return {"lr":lr, "momentum":momentum}
 
@@ -44,12 +44,22 @@ def layer_regularizer():
 
 def regul(outputs, ksize):
     n_units = outputs.get_shape()[-1]
+    moving_mean_1 = tf.get_variable('moving_mean_1'+str(ksize), [n_units], initializer=tf.zeros_initializer(), trainable=False)
+    mean_1 = moving_averages.assign_moving_average(moving_mean_1, tf.reduce_mean(outputs, [0]), REG_COEF, zero_debias=False)
+    var_1 = tf.reduce_sum(tf.reduce_mean( tf.square( tf.subtract(outputs, mean_1) ) ,[0])  )
+    return var_1
+
+
+def regul_(outputs, ksize):
+    n_units = outputs.get_shape()[-1]
     moving_mean_1 = tf.get_variable('moving_mean_1'+str(ksize), [n_units], initializer=tf.ones_initializer(), trainable=False)
     moving_mean_2 = tf.Variable(np.full((n_units), -1., dtype=np.float32), name='moving_mean_2'+str(ksize), trainable=False)
-    p_mode_1 = tf.sigmoid(outputs)#tf.cast(tf.greater(outputs, tf.zeros_like(outputs)), tf.float32)#
+    p_mode_1 = tf.sigmoid(outputs)
     p_mode_2 = tf.add(tf.multiply(p_mode_1, -1.), 1.)
-    mean_1 = moving_averages.assign_moving_average(moving_mean_1, tf.reduce_mean(tf.multiply(p_mode_1, outputs), [0]), REG_COEF, zero_debias=False)
-    mean_2 = moving_averages.assign_moving_average(moving_mean_2, tf.reduce_mean(tf.multiply(p_mode_2, outputs), [0]), REG_COEF, zero_debias=False)
+    p_a1 = tf.reduce_mean(p_mode_1, [0])
+    p_a2 = tf.reduce_mean(p_mode_2, [0])
+    mean_1 = moving_averages.assign_moving_average(moving_mean_1, tf.divide(tf.reduce_mean(tf.multiply(p_mode_1, outputs), [0]), p_a1), REG_COEF, zero_debias=False)
+    mean_2 = moving_averages.assign_moving_average(moving_mean_2, tf.divide(tf.reduce_mean(tf.multiply(p_mode_2, outputs), [0]), p_a2), REG_COEF, zero_debias=False)
     var_1 = tf.reduce_sum(  tf.reduce_mean(tf.multiply( tf.square(tf.subtract(outputs, mean_1) ), p_mode_1) ,[0])  )
     var_2 = tf.reduce_sum(  tf.reduce_mean(tf.multiply( tf.square(tf.subtract(outputs, mean_2) ), p_mode_2) ,[0])  )
     return tf.add(var_1, var_2)
@@ -164,14 +174,17 @@ def inference(inputs, training_mode):
 
     with tf.variable_scope('layer_3'):
         x = inception(x, 176, 160, training_mode)
+        #x = tf.cond(training_mode, lambda: tf.nn.dropout(x, 0.2), lambda: tf.nn.dropout(x, 1))
 
     with tf.variable_scope('layer_2'):
         x = inception(x, 176, 160, training_mode)
+        #x = tf.cond(training_mode, lambda: tf.nn.dropout(x, 0.2), lambda: tf.nn.dropout(x, 1))
         #x = tf.Print(x, [tf.shape(x)])
         x = tf.nn.avg_pool(x, ksize=[1, 7, 7, 1], strides=[1, 1, 1, 1], padding='VALID')
         x = tf.reshape(x, [-1, 336])
 
+
     with tf.variable_scope('layer_1'):
         outputs = fc_e(x, 10)
 
-    return outputs, outputs
+    return outputs, tf.nn.softmax(outputs)
